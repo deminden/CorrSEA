@@ -1,6 +1,8 @@
-library(DESeq2)
-library(data.table)
-library(parallel)
+suppressPackageStartupMessages({
+  library(DESeq2)
+  library(data.table)
+  library(parallel)
+})
 
 # Allow long GTEx downloads to complete.
 options(timeout = 3600)

@@ -9,8 +9,8 @@ options(timeout = 3600)
 
 # Set folder paths
 data_folder <- "data"
-output_folder_norm <- "Normalised_counts_tissues"
-output_folder_vst <- "VST_counts_tissues"
+output_folder_norm <- file.path(data_folder, "GTEx_normalised_counts_tissues")
+output_folder_vst <- file.path(data_folder, "GTEx_vst_counts_tissues")
 vst_tissues <- character(0)
 
 parse_worker_count <- function(default = 2) {
@@ -146,7 +146,7 @@ cat(sprintf("Using %d worker%s for tissue processing.\n",
             workers,
             ifelse(workers == 1, "", "s")))
 
-mclapply(names(tissue_data), function(tissue) {
+invisible(mclapply(names(tissue_data), function(tissue) {
   tissue_df <- tissue_data[[tissue]]
   normalize_counts(tissue, tissue_df, gene_reads_data)
-}, mc.cores = workers)
+}, mc.cores = workers))

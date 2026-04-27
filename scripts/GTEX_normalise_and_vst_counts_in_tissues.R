@@ -80,14 +80,15 @@ gene_reads_data <- as.data.frame(gene_reads_data, check.names = FALSE)
 annotations <- fread(annotation_file)
 annotations <- as.data.frame(annotations)
 
-# Ensure all count samples have corresponding annotation rows
-sample_ids <- colnames(gene_reads_data)[3:ncol(gene_reads_data)]  # Exclude Name and Description columns
-annotations <- annotations[annotations$SAMPID %in% sample_ids, ]
+# Identify shared sample columns explicitly instead of relying on column position.
+metadata_cols <- intersect(c("Name", "Description"), colnames(gene_reads_data))
+sample_ids <- intersect(colnames(gene_reads_data), annotations$SAMPID)
 
-# Verify all count samples have annotations
-if (!all(sample_ids %in% annotations$SAMPID)) {
-  stop("Some count file samples do not have corresponding rows in the annotation file.")
+if (length(sample_ids) == 0) {
+  stop("No overlapping sample IDs found between the count matrix and the annotation file.")
 }
+
+annotations <- annotations[annotations$SAMPID %in% sample_ids, ]
 
 # Split data by tissue
 tissue_data <- split(annotations, annotations$SMTSD)
@@ -109,10 +110,10 @@ normalize_counts <- function(tissue, tissue_df, gene_reads_data) {
   
   # Extract tissue-specific samples and counts
   tissue_samples <- tissue_df$SAMPID
-  tissue_counts <- gene_reads_data[, c("Name", "Description", tissue_samples), drop = FALSE]
+  tissue_counts <- gene_reads_data[, c(metadata_cols, tissue_samples), drop = FALSE]
   
   # Extract count matrix and colData
-  count_matrix <- as.matrix(tissue_counts[, -(1:2)])  # Remove Name and Description
+  count_matrix <- as.matrix(tissue_counts[, tissue_samples, drop = FALSE])
   rownames(count_matrix) <- tissue_counts$Name
   colData <- data.frame(row.names = tissue_samples, condition = rep("control", length(tissue_samples)))
   

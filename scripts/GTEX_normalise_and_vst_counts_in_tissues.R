@@ -2,6 +2,9 @@ library(DESeq2)
 library(data.table)
 library(parallel)
 
+# Allow long GTEx downloads to complete.
+options(timeout = 3600)
+
 # Set folder paths
 data_folder <- "data"
 output_folder_norm <- "Normalised_counts_tissues"

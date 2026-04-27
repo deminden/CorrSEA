@@ -79,6 +79,7 @@ gene_reads_data <- as.data.frame(gene_reads_data, check.names = FALSE)
 # Read annotation file
 annotations <- fread(annotation_file)
 annotations <- as.data.frame(annotations)
+annotations_all <- annotations
 
 # Identify shared sample columns explicitly instead of relying on column position.
 metadata_cols <- intersect(c("Name", "Description"), colnames(gene_reads_data))
@@ -89,6 +90,7 @@ if (length(sample_ids) == 0) {
 }
 
 annotations <- annotations[annotations$SAMPID %in% sample_ids, ]
+skipped_tissues <- setdiff(unique(annotations_all$SMTSD), unique(annotations$SMTSD))
 
 # Split data by tissue
 tissue_data <- split(annotations, annotations$SMTSD)
@@ -150,3 +152,8 @@ invisible(mclapply(names(tissue_data), function(tissue) {
   tissue_df <- tissue_data[[tissue]]
   normalize_counts(tissue, tissue_df, gene_reads_data)
 }, mc.cores = workers))
+
+if (length(skipped_tissues) > 0) {
+  cat("Skipped tissues with no matching count samples:\n")
+  cat(paste(skipped_tissues, collapse = "\n"), "\n")
+}

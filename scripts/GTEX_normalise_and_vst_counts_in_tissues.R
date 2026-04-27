@@ -11,7 +11,7 @@ options(timeout = 3600)
 data_folder <- "data"
 output_folder_norm <- file.path(data_folder, "GTEx_normalised_counts_tissues")
 output_folder_vst <- file.path(data_folder, "GTEx_vst_counts_tissues")
-vst_tissues <- character(0)
+vst_tissues <- c("Lung", "Testis", "Brain - Frontal Cortex (BA9)")
 
 parse_worker_count <- function(default = 2) {
   args <- commandArgs(trailingOnly = TRUE)

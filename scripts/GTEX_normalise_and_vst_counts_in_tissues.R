@@ -72,7 +72,7 @@ download_if_missing(annotation_url, annotation_file)
 
 # Read Parquet file
 gene_reads_data <- arrow::read_parquet(gene_reads_file)
-gene_reads_data <- as.data.frame(gene_reads_data)
+gene_reads_data <- as.data.frame(gene_reads_data, check.names = FALSE)
 
 # Read annotation file
 annotations <- fread(annotation_file)

@@ -13,6 +13,7 @@ options(timeout = 3600)
 data_folder <- "data"
 output_folder_norm <- file.path(data_folder, "TCGA_normalised_counts_cancers")
 output_folder_vst <- file.path(data_folder, "TCGA_vst_counts_cancers")
+vst_cancers <- c()
 annotation <- "gencode_v29"
 recount3_url <- getOption(
   "recount3_url",
@@ -95,7 +96,9 @@ requested_cancers <- args$cancers
 # Create output directories if they don't exist
 dir.create(data_folder, showWarnings = FALSE)
 dir.create(output_folder_norm, showWarnings = FALSE)
-dir.create(output_folder_vst, showWarnings = FALSE)
+if (length(vst_cancers) > 0) {
+  dir.create(output_folder_vst, showWarnings = FALSE)
+}
 
 # Confirm requested annotation is available.
 available_annotations <- annotation_options("human")
@@ -152,8 +155,9 @@ normalize_counts <- function(project_info) {
     output_folder_vst,
     paste0(cancer_file, "_", annotation, "_vst_counts.tsv.gz")
   )
+  make_vst <- cancer %in% vst_cancers
   norm_needed <- !file.exists(norm_file)
-  vst_needed <- !file.exists(vst_file)
+  vst_needed <- make_vst && !file.exists(vst_file)
 
   # Skip processing if requested output files already exist
   if (!norm_needed && !vst_needed) {

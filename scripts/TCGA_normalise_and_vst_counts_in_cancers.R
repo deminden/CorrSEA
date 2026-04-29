@@ -139,15 +139,31 @@ if (!is.null(requested_cancers)) {
 }
 
 tcga_projects <- tcga_projects[order(tcga_projects$project), ]
+rm(project_cache)
+gc()
+unlink(file.path(cache_folder, "projects"), recursive = TRUE, force = TRUE)
 
 sanitize_project_name <- function(project) {
   gsub("[^A-Za-z0-9_]+", "_", project)
+}
+
+cleanup_cache_path <- function(path) {
+  if (dir.exists(path)) {
+    unlink(path, recursive = TRUE, force = TRUE)
+  }
+}
+
+cleanup_empty_cache_folder <- function(path) {
+  if (dir.exists(path) && length(list.files(path, all.files = TRUE, no.. = TRUE)) == 0) {
+    unlink(path, recursive = TRUE, force = TRUE)
+  }
 }
 
 # Function to normalize counts and save results
 normalize_counts <- function(project_info) {
   cancer <- project_info$project
   cancer_file <- sanitize_project_name(cancer)
+  cancer_cache_path <- file.path(cache_folder, cancer_file)
 
   # Define file paths
   norm_file <- file.path(
@@ -164,13 +180,14 @@ normalize_counts <- function(project_info) {
 
   # Skip processing if requested output files already exist
   if (!norm_needed && !vst_needed) {
+    cleanup_cache_path(cancer_cache_path)
     cat(sprintf("Files for cancer '%s' already exist. Skipping processing.\n", cancer))
     return(list(status = "skipped", cancer = cancer, error = NA_character_))
   }
 
   result <- tryCatch({
     # Download recount3 data and convert coverage counts to read-style counts.
-    cancer_cache <- recount3_cache(file.path(cache_folder, cancer_file))
+    cancer_cache <- recount3_cache(cancer_cache_path)
     rse <- create_rse(
       project_info,
       annotation = annotation,
@@ -204,6 +221,13 @@ normalize_counts <- function(project_info) {
       vst_dt <- as.data.table(vst_counts, keep.rownames = "Ensembl_gene_ID")
       fwrite(vst_dt, file = vst_file, sep = "\t", compress = "gzip", row.names = FALSE)
     }
+
+    rm(cancer_cache, rse, count_matrix, dds)
+    if (exists("vsd")) {
+      rm(vsd)
+    }
+    gc()
+    cleanup_cache_path(cancer_cache_path)
 
     cat(sprintf("Processing complete for cancer '%s'.\n", cancer))
     list(status = "completed", cancer = cancer, error = NA_character_)
@@ -242,3 +266,5 @@ if (nrow(failed_results) > 0) {
     cat(sprintf("%s: %s\n", failed_results$cancer[[i]], failed_results$error[[i]]))
   }
 }
+
+cleanup_empty_cache_folder(cache_folder)

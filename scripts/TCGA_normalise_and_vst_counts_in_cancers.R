@@ -13,6 +13,7 @@ options(timeout = 3600)
 data_folder <- "data"
 output_folder_norm <- file.path(data_folder, "TCGA_normalised_counts_cancers")
 output_folder_vst <- file.path(data_folder, "TCGA_vst_counts_cancers")
+cache_folder <- file.path(data_folder, "recount3_cache")
 vst_cancers <- c()
 annotation <- "gencode_v29"
 recount3_url <- getOption(
@@ -96,6 +97,7 @@ requested_cancers <- args$cancers
 # Create output directories if they don't exist
 dir.create(data_folder, showWarnings = FALSE)
 dir.create(output_folder_norm, showWarnings = FALSE)
+dir.create(cache_folder, showWarnings = FALSE)
 if (length(vst_cancers) > 0) {
   dir.create(output_folder_vst, showWarnings = FALSE)
 }
@@ -111,7 +113,8 @@ if (!(annotation %in% available_annotations)) {
 }
 
 # Load input data
-human_projects <- available_projects(recount3_url = recount3_url)
+project_cache <- recount3_cache(file.path(cache_folder, "projects"))
+human_projects <- available_projects(recount3_url = recount3_url, bfc = project_cache)
 tcga_projects <- subset(
   human_projects,
   organism == "human" &
@@ -167,7 +170,13 @@ normalize_counts <- function(project_info) {
 
   result <- tryCatch({
     # Download recount3 data and convert coverage counts to read-style counts.
-    rse <- create_rse(project_info, annotation = annotation, recount3_url = recount3_url)
+    cancer_cache <- recount3_cache(file.path(cache_folder, cancer_file))
+    rse <- create_rse(
+      project_info,
+      annotation = annotation,
+      bfc = cancer_cache,
+      recount3_url = recount3_url
+    )
     count_matrix <- round(transform_counts(rse))
     rownames(count_matrix) <- rownames(rse)
 
